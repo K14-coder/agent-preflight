@@ -5,11 +5,12 @@
 `agent-preflight` is a local, zero-dependency CLI for a simple question: *is this repository asking my agent to do something surprising?* It looks for common prompt-injection, credential-discovery, destructive-command, encoded-execution, and symbolic-link patterns before an agent receives broad filesystem or shell access.
 
 ```bash
-npx agent-preflight .
-npx agent-preflight /path/to/untrusted-repository --json
+git clone https://github.com/YOUR-ACCOUNT/agent-preflight.git
+cd agent-preflight
+node src/cli.js /path/to/untrusted-repository --json
 ```
 
-It exits with code `2` when it finds a high-severity pattern, which makes it usable in pre-commit hooks and CI.
+It exits with code `2` when it finds a high-severity pattern, which makes it usable in pre-commit hooks and CI. Once published to npm, it can be invoked with `npx agent-preflight`.
 
 ## What it checks
 
@@ -27,8 +28,6 @@ For an intentional fixture or reviewed false positive, append `agent-preflight: 
 ## Development
 
 ```bash
-git clone https://github.com/YOUR-ACCOUNT/agent-preflight.git
-cd agent-preflight
 npm test
 ```
 
