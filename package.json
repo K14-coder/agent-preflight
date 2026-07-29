@@ -1,0 +1,11 @@
+{
+  "name": "agent-preflight",
+  "version": "0.1.0",
+  "description": "Scan a repository for risky instructions before handing it to an AI coding agent.",
+  "type": "module",
+  "bin": { "agent-preflight": "./src/cli.js" },
+  "scripts": { "test": "node --test", "lint": "node --check src/*.js" },
+  "keywords": ["ai-agents", "agent-security", "prompt-injection", "coding-agents", "repository-security", "claude-code", "codex", "cursor", "supply-chain-security"],
+  "engines": { "node": ">=20" },
+  "license": "MIT"
+}
