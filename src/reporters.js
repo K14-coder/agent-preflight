@@ -18,3 +18,11 @@ export function sarifReport(result) {
     runs: [{ tool: { driver: { name: "agent-preflight", informationUri: "https://github.com/K14-coder/agent-preflight", rules: [...rules.values()] } }, results: result.findings.map((finding) => ({ ruleId: finding.ruleId, level: LEVELS[finding.severity], message: { text: `${finding.message} ${finding.remediation}` }, partialFingerprints: { agentPreflight: finding.fingerprint }, locations: [{ physicalLocation: { artifactLocation: { uri: finding.file }, region: { startLine: finding.line, startColumn: finding.column } } }] })) }]
   };
 }
+
+export function markdownReport(result) {
+  const summary = `**agent-preflight:** scanned ${result.scannedFiles.length} agent-facing files, risk score **${result.score}/100**, ${result.findings.length} new finding${result.findings.length === 1 ? "" : "s"}.`;
+  if (!result.findings.length) return `${summary}\n\nNo findings at the selected policy level.`;
+  const rows = result.findings.map((finding) => `| ${finding.severity.toUpperCase()} | \`${finding.ruleId}\` | \`${finding.file}:${finding.line}\` | ${finding.message} |`).join("\n");
+  const baseline = result.baseline ? `\n\n${result.baseline.knownFindings} known baseline finding${result.baseline.knownFindings === 1 ? " was" : "s were"} omitted.` : "";
+  return `${summary}\n\n| Severity | Rule | Location | Finding |\n| --- | --- | --- | --- |\n${rows}${baseline}`;
+}

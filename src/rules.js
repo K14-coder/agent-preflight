@@ -99,5 +99,29 @@ export const RULES = [
     pattern: /\b(?:curl|wget|fetch|Invoke-WebRequest)\b[^\n]{0,180}\b(?:AGENTS\.md|CLAUDE\.md|SKILL\.md|instructions?|prompt)\b/i,
     message: "The text fetches agent instructions from a remote location.",
     remediation: "Vendor and review agent instructions in the repository; do not load mutable remote guidance at runtime."
+  },
+  {
+    id: "APF014",
+    title: "Verification bypass",
+    severity: "medium",
+    pattern: /(?:--no-verify|--no-gpg-checks|GIT_SSL_NO_VERIFY\s*=\s*(?:1|true)|NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*0)\b/i,
+    message: "A command disables a verification or transport-security control.",
+    remediation: "Fix the verification failure or explicitly scope and document an audited exception."
+  },
+  {
+    id: "APF015",
+    title: "Unpinned package installation",
+    severity: "medium",
+    pattern: /\b(?:npm|pnpm|yarn|pip(?:x)?|uv)\s+(?:install|add|run)\b[^\n]{0,180}(?:https?:\/\/|git\+|@(?:latest|next)\b)/i,
+    message: "A package install uses a mutable or direct remote reference.",
+    remediation: "Pin the package version or immutable commit and record the source in the lockfile."
+  },
+  {
+    id: "APF016",
+    title: "Temporary executable launch",
+    severity: "high",
+    pattern: /\b(?:chmod\s+\+x\s+\/tmp\/|(?:ba)?sh\s+\/tmp\/|\.\/tmp\/)[^\n]{0,160}/i,
+    message: "A command executes content from a temporary location.",
+    remediation: "Store reviewed executables in version control or verify a pinned artifact before execution."
   }
 ];

@@ -1,0 +1,7 @@
+{
+  "policy": { "failOn": "medium" },
+  "rules": {
+    "APF014": "off",
+    "APF015": "low"
+  }
+}

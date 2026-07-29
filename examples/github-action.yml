@@ -1,0 +1,24 @@
+name: Agent preflight
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "**/*.json"
+      - "**/*.yml"
+      - "**/*.yaml"
+      - "**/*.sh"
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: K14-coder/agent-preflight@v0.3.0
+        with:
+          mode: changed
+          base: ${{ github.event.pull_request.base.sha }}
+          baseline: .agentpreflight-baseline.json
+          fail-on: high

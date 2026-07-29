@@ -57,11 +57,11 @@ function isSuppressed(line, ruleId) {
   return Boolean(marker && (!marker[1] || marker[1].split(",").includes(ruleId)));
 }
 
-function fingerprint(file, line, rule) {
-  return crypto.createHash("sha256").update(`${file}:${line}:${rule}`).digest("hex").slice(0, 16);
+function fingerprint(file, rule, snippet) {
+  return crypto.createHash("sha256").update(`${file}:${rule}:${snippet.replace(/\s+/g, " ")}`).digest("hex").slice(0, 20);
 }
 
-function score(findings) {
+export function score(findings) {
   return Math.min(100, findings.reduce((total, finding) => total + ({ critical: 45, high: 25, medium: 10, low: 3 }[finding.severity] || 0), 0));
 }
 
@@ -80,7 +80,8 @@ export function scanRepository(root = process.cwd(), options = {}) {
     if (!options.allFiles && surface === "other") continue;
     scannedFiles.push(filePath);
     if (file.symlink) {
-      findings.push({ ruleId: "APF013", title: "Symbolic link", severity: "medium", file: filePath, line: 1, column: 1, surface, snippet: "symbolic link", message: "A symbolic link can redirect an agent outside the expected repository boundary.", remediation: "Verify the link destination before granting an agent filesystem access.", fingerprint: fingerprint(filePath, 1, "APF013") });
+      const snippet = "symbolic link";
+      findings.push({ ruleId: "APF013", title: "Symbolic link", severity: "medium", file: filePath, line: 1, column: 1, surface, snippet, message: "A symbolic link can redirect an agent outside the expected repository boundary.", remediation: "Verify the link destination before granting an agent filesystem access.", fingerprint: fingerprint(filePath, "APF013", snippet) });
       continue;
     }
     let text;
@@ -88,12 +89,15 @@ export function scanRepository(root = process.cwd(), options = {}) {
     if (text.includes("\u0000")) continue;
     for (const rule of RULES) {
       if (rule.surfaces && !rule.surfaces.includes(surface)) continue;
+      const severity = options.rules?.[rule.id] || rule.severity;
+      if (severity === "off") continue;
       const expression = new RegExp(rule.pattern.source, rule.pattern.flags.replace("g", ""));
       let match;
       while ((match = expression.exec(text))) {
         const location = lineAt(text, match.index);
         if (!isSuppressed(location.text, rule.id)) {
-          findings.push({ ruleId: rule.id, title: rule.title, severity: rule.severity, file: filePath, line: location.line, column: location.column, surface, snippet: location.text.trim().slice(0, 240), message: rule.message, remediation: rule.remediation, fingerprint: fingerprint(filePath, location.line, rule.id) });
+          const snippet = location.text.trim().slice(0, 240);
+          findings.push({ ruleId: rule.id, title: rule.title, severity, file: filePath, line: location.line, column: location.column, surface, snippet, message: rule.message, remediation: rule.remediation, fingerprint: fingerprint(filePath, rule.id, snippet) });
         }
         if (!expression.global) break;
       }
@@ -101,7 +105,9 @@ export function scanRepository(root = process.cwd(), options = {}) {
   }
 
   findings.sort((a, b) => SEVERITY[b.severity] - SEVERITY[a.severity] || a.file.localeCompare(b.file) || a.line - b.line);
-  return { version: "0.2.0", root: resolvedRoot, scannedFiles: scannedFiles.sort(), score: score(findings), findings, summary: Object.fromEntries(Object.keys(SEVERITY).filter((severity) => severity !== "none").map((severity) => [severity, findings.filter((finding) => finding.severity === severity).length])) };
+  const knownFindings = options.baselineFingerprints ? findings.filter((finding) => options.baselineFingerprints.has(finding.fingerprint)) : [];
+  const visibleFindings = options.baselineFingerprints ? findings.filter((finding) => !options.baselineFingerprints.has(finding.fingerprint)) : findings;
+  return { version: "0.3.0", root: resolvedRoot, scannedFiles: scannedFiles.sort(), score: score(visibleFindings), findings: visibleFindings, summary: Object.fromEntries(Object.keys(SEVERITY).filter((severity) => severity !== "none").map((severity) => [severity, visibleFindings.filter((finding) => finding.severity === severity).length])), baseline: options.baselineFingerprints ? { knownFindings: knownFindings.length, newFindings: visibleFindings.length } : undefined };
 }
 
 export function shouldFail(result, threshold = "high") {

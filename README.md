@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: K14-coder/agent-preflight@v0.2.0
+      - uses: K14-coder/agent-preflight@v0.3.0
         with:
           mode: changed
           base: ${{ github.event.pull_request.base.sha }}
@@ -41,6 +41,20 @@ jobs:
 ```
 
 The action fails on new high- or critical-severity findings and exposes `score` and `findings` as step outputs.
+
+## Why v0.3 is useful in a real repository
+
+Security gates fail when they force a team to clean up every historical problem before they can protect the next pull request. v0.3 adds reviewed policy files and baselines, so the first adoption can report known debt while still blocking newly introduced high-risk instructions.
+
+```bash
+# Capture the current reviewed state once.
+node src/cli.js baseline . --output .agentpreflight-baseline.json
+
+# Fail only on findings that are not in that baseline.
+node src/cli.js scan . --baseline .agentpreflight-baseline.json --fail-on high
+```
+
+Commit both the baseline and the policy review that approved it. Baselines are evidence of accepted risk, not a way to silence unknown findings.
 
 ## What a finding looks like
 
@@ -129,6 +143,31 @@ agent-preflight: allow=APF009
 Suppressions are intentionally local and visible in code review. A clean scan is not a security guarantee; review any finding and run untrusted repositories in an isolated environment.
 
 To omit an intentional fixture or generated directory, add a repository-relative path to `.agentpreflightignore`. Directory entries apply to their contents; keep ignores narrow and explain them in review.
+
+### Versioned policy
+
+Check in `.agentpreflight.json` to make policy visible in review:
+
+```json
+{
+  "policy": { "failOn": "high" },
+  "ignore": ["docs/generated"],
+  "rules": {
+    "APF009": "low",
+    "APF015": "off"
+  }
+}
+```
+
+`off` must be used sparingly. Prefer lowering severity when a control is still worth tracking. See [policy guidance](docs/policies.md), the [full rule catalog](docs/rules.md), and [CI integrations](docs/integrations.md).
+
+### Explain a finding
+
+```bash
+node src/cli.js explain APF002
+```
+
+This prints the rule’s default severity, why it fires, and its remediation. Use it in issue triage rather than treating a rule ID as an opaque error.
 
 ## Privacy model
 
