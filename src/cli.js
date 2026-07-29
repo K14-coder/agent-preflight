@@ -85,7 +85,7 @@ function scan(target, options, command) {
   write(output, options.output);
   if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `score=${result.score}\nfindings=${result.findings.length}\nknown-findings=${result.baseline?.knownFindings || 0}\nscanned-files=${result.scannedFiles.length}\n`);
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${markdownReport(result)}\n`);
-  if (process.env.GITHUB_ACTIONS === "true" && result.findings.length) process.stdout.write(`${githubAnnotations(result)}\n`);
+  if (process.env.AGENT_PREFLIGHT_ANNOTATE === "true" && result.findings.length) process.stdout.write(`${githubAnnotations(result)}\n`);
   if (shouldFail(result, options.failOn || config.policy.failOn || "high")) process.exitCode = 2;
 }
 

@@ -65,6 +65,7 @@ runs:
         APF_ALL_FILES: ${{ inputs.all-files }}
         APF_PROFILE: ${{ inputs.profile }}
         APF_MAX_FINDINGS: ${{ inputs.max-findings }}
+        AGENT_PREFLIGHT_ANNOTATE: "true"
       run: |
         args=(scan "$GITHUB_WORKSPACE" --mode "$APF_MODE" --fail-on "$APF_FAIL_ON" --format "$APF_FORMAT")
         if [ -n "$APF_BASE" ]; then args+=(--base "$APF_BASE"); fi
