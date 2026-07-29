@@ -5,7 +5,7 @@
 `agent-preflight` is a local, zero-dependency CLI for a simple question: *is this repository asking my agent to do something surprising?* It looks for common prompt-injection, credential-discovery, destructive-command, encoded-execution, and symbolic-link patterns before an agent receives broad filesystem or shell access.
 
 ```bash
-git clone https://github.com/YOUR-ACCOUNT/agent-preflight.git
+git clone https://github.com/K14-coder/agent-preflight.git
 cd agent-preflight
 node src/cli.js /path/to/untrusted-repository --json
 ```
