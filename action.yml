@@ -1,0 +1,60 @@
+name: "Agent Preflight"
+description: "Block risky AI-agent instructions, MCP configurations, scripts, and workflows before they merge."
+author: "agent-preflight contributors"
+branding:
+  icon: shield
+  color: purple
+inputs:
+  mode:
+    description: "Scan all agent-facing files or only files changed from the supplied base ref."
+    required: false
+    default: all
+  base:
+    description: "Git ref or commit SHA used when mode is changed."
+    required: false
+    default: ""
+  fail-on:
+    description: "Minimum severity that fails the action: critical, high, medium, low, or none."
+    required: false
+    default: high
+  format:
+    description: "Output format: text, json, or sarif."
+    required: false
+    default: text
+  config:
+    description: "Optional path to an agent-preflight policy file."
+    required: false
+    default: ""
+  baseline:
+    description: "Optional path to a reviewed baseline file. Matching findings are reported as known debt."
+    required: false
+    default: ""
+  all-files:
+    description: "Scan every text file instead of only agent-facing surfaces."
+    required: false
+    default: "false"
+outputs:
+  score:
+    description: "Risk score from 0 to 100."
+  findings:
+    description: "Number of findings."
+runs:
+  using: composite
+  steps:
+    - id: scan
+      shell: bash
+      env:
+        APF_MODE: ${{ inputs.mode }}
+        APF_BASE: ${{ inputs.base }}
+        APF_FAIL_ON: ${{ inputs.fail-on }}
+        APF_FORMAT: ${{ inputs.format }}
+        APF_CONFIG: ${{ inputs.config }}
+        APF_BASELINE: ${{ inputs.baseline }}
+        APF_ALL_FILES: ${{ inputs.all-files }}
+      run: |
+        args=(scan "$GITHUB_WORKSPACE" --mode "$APF_MODE" --fail-on "$APF_FAIL_ON" --format "$APF_FORMAT")
+        if [ -n "$APF_BASE" ]; then args+=(--base "$APF_BASE"); fi
+        if [ -n "$APF_CONFIG" ]; then args+=(--config "$APF_CONFIG"); fi
+        if [ -n "$APF_BASELINE" ]; then args+=(--baseline "$APF_BASELINE"); fi
+        if [ "$APF_ALL_FILES" = "true" ]; then args+=(--all-files); fi
+        node "$GITHUB_ACTION_PATH/src/cli.js" "${args[@]}"

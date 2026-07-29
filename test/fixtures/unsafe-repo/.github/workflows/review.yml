@@ -1,0 +1,9 @@
+name: Review
+on: pull_request
+permissions:
+  contents: write
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main

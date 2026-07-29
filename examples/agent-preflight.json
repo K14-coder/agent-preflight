@@ -1,0 +1,7 @@
+{
+  "policy": { "failOn": "high" },
+  "ignore": ["fixtures/generated"],
+  "rules": {
+    "APF009": "low"
+  }
+}
