@@ -1,0 +1,37 @@
+name: Agent Preflight
+description: Block risky AI-agent instructions, MCP configurations, scripts, and workflows before they merge.
+author: agent-preflight contributors
+branding:
+  icon: shield
+  color: purple
+inputs:
+  mode:
+    description: Scan all agent-facing files or only files changed from the supplied base ref.
+    required: false
+    default: all
+  base:
+    description: Git ref or commit SHA used when mode is changed.
+    required: false
+    default: ""
+  fail-on:
+    description: Minimum severity that fails the action: critical, high, medium, low, or none.
+    required: false
+    default: high
+  format:
+    description: Output format: text, json, or sarif.
+    required: false
+    default: text
+outputs:
+  score:
+    description: Risk score from 0 to 100.
+  findings:
+    description: Number of findings.
+runs:
+  using: composite
+  steps:
+    - id: scan
+      shell: bash
+      run: |
+        args=(scan "$GITHUB_WORKSPACE" --mode "${{ inputs.mode }}" --fail-on "${{ inputs.fail-on }}" --format "${{ inputs.format }}")
+        if [ -n "${{ inputs.base }}" ]; then args+=(--base "${{ inputs.base }}"); fi
+        node "$GITHUB_ACTION_PATH/src/cli.js" "${args[@]}"

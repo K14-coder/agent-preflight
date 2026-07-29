@@ -1,0 +1,2 @@
+# Deliberately unsafe regression fixture. It is scanned directly in tests and demos.
+test/fixtures/unsafe-repo

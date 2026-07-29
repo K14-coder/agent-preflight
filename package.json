@@ -1,11 +1,12 @@
 {
   "name": "agent-preflight",
-  "version": "0.1.0",
-  "description": "Scan a repository for risky instructions before handing it to an AI coding agent.",
+  "version": "0.2.0",
+  "description": "A local-first security gate for AI coding agent instructions, MCP configs, scripts, and workflows.",
   "type": "module",
   "bin": { "agent-preflight": "./src/cli.js" },
-  "scripts": { "test": "node --test", "lint": "node --check src/*.js" },
-  "keywords": ["ai-agents", "agent-security", "prompt-injection", "coding-agents", "repository-security", "claude-code", "codex", "cursor", "supply-chain-security"],
+  "scripts": { "test": "node --test", "lint": "node --check src/*.js", "demo": "node src/cli.js scan test/fixtures/unsafe-repo --fail-on none" },
+  "keywords": ["ai-agents", "agent-security", "prompt-injection", "coding-agents", "repository-security", "claude-code", "codex", "cursor", "mcp-security", "github-actions", "supply-chain-security"],
+  "files": ["src", "action.yml", "README.md", "LICENSE"],
   "engines": { "node": ">=20" },
   "license": "MIT"
 }
