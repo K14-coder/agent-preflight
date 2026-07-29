@@ -33,11 +33,23 @@ inputs:
     description: "Scan every text file instead of only agent-facing surfaces."
     required: false
     default: "false"
+  profile:
+    description: "Policy profile: balanced or strict. Strict raises medium findings to high."
+    required: false
+    default: balanced
+  max-findings:
+    description: "Optional maximum number of highest-priority findings to print."
+    required: false
+    default: ""
 outputs:
   score:
     description: "Risk score from 0 to 100."
   findings:
     description: "Number of findings."
+  known-findings:
+    description: "Number of matching findings omitted by a baseline."
+  scanned-files:
+    description: "Number of files inspected."
 runs:
   using: composite
   steps:
@@ -51,10 +63,14 @@ runs:
         APF_CONFIG: ${{ inputs.config }}
         APF_BASELINE: ${{ inputs.baseline }}
         APF_ALL_FILES: ${{ inputs.all-files }}
+        APF_PROFILE: ${{ inputs.profile }}
+        APF_MAX_FINDINGS: ${{ inputs.max-findings }}
       run: |
         args=(scan "$GITHUB_WORKSPACE" --mode "$APF_MODE" --fail-on "$APF_FAIL_ON" --format "$APF_FORMAT")
         if [ -n "$APF_BASE" ]; then args+=(--base "$APF_BASE"); fi
         if [ -n "$APF_CONFIG" ]; then args+=(--config "$APF_CONFIG"); fi
         if [ -n "$APF_BASELINE" ]; then args+=(--baseline "$APF_BASELINE"); fi
         if [ "$APF_ALL_FILES" = "true" ]; then args+=(--all-files); fi
+        if [ -n "$APF_PROFILE" ]; then args+=(--profile "$APF_PROFILE"); fi
+        if [ -n "$APF_MAX_FINDINGS" ]; then args+=(--max-findings "$APF_MAX_FINDINGS"); fi
         node "$GITHUB_ACTION_PATH/src/cli.js" "${args[@]}"

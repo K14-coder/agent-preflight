@@ -65,6 +65,16 @@ export function score(findings) {
   return Math.min(100, findings.reduce((total, finding) => total + ({ critical: 45, high: 25, medium: 10, low: 3 }[finding.severity] || 0), 0));
 }
 
+function effectiveSeverity(rule, options) {
+  const override = options.rules?.[rule.id];
+  if (override) return override;
+  if (options.profile === "strict") {
+    if (rule.severity === "medium") return "high";
+    if (rule.severity === "low") return "medium";
+  }
+  return rule.severity;
+}
+
 export function scanRepository(root = process.cwd(), options = {}) {
   const resolvedRoot = path.resolve(root);
   const changed = options.changedFiles ? new Set(options.changedFiles.map((file) => file.replaceAll("\\", "/"))) : null;
@@ -89,9 +99,9 @@ export function scanRepository(root = process.cwd(), options = {}) {
     if (text.includes("\u0000")) continue;
     for (const rule of RULES) {
       if (rule.surfaces && !rule.surfaces.includes(surface)) continue;
-      const severity = options.rules?.[rule.id] || rule.severity;
+      const severity = effectiveSeverity(rule, options);
       if (severity === "off") continue;
-      const expression = new RegExp(rule.pattern.source, rule.pattern.flags.replace("g", ""));
+      const expression = new RegExp(rule.pattern.source, rule.pattern.flags.includes("g") ? rule.pattern.flags : `${rule.pattern.flags}g`);
       let match;
       while ((match = expression.exec(text))) {
         const location = lineAt(text, match.index);
@@ -99,15 +109,16 @@ export function scanRepository(root = process.cwd(), options = {}) {
           const snippet = location.text.trim().slice(0, 240);
           findings.push({ ruleId: rule.id, title: rule.title, severity, file: filePath, line: location.line, column: location.column, surface, snippet, message: rule.message, remediation: rule.remediation, fingerprint: fingerprint(filePath, rule.id, snippet) });
         }
-        if (!expression.global) break;
+        if (match[0].length === 0) expression.lastIndex += 1;
       }
     }
   }
 
   findings.sort((a, b) => SEVERITY[b.severity] - SEVERITY[a.severity] || a.file.localeCompare(b.file) || a.line - b.line);
   const knownFindings = options.baselineFingerprints ? findings.filter((finding) => options.baselineFingerprints.has(finding.fingerprint)) : [];
-  const visibleFindings = options.baselineFingerprints ? findings.filter((finding) => !options.baselineFingerprints.has(finding.fingerprint)) : findings;
-  return { version: "0.3.0", root: resolvedRoot, scannedFiles: scannedFiles.sort(), score: score(visibleFindings), findings: visibleFindings, summary: Object.fromEntries(Object.keys(SEVERITY).filter((severity) => severity !== "none").map((severity) => [severity, visibleFindings.filter((finding) => finding.severity === severity).length])), baseline: options.baselineFingerprints ? { knownFindings: knownFindings.length, newFindings: visibleFindings.length } : undefined };
+  const unboundedFindings = options.baselineFingerprints ? findings.filter((finding) => !options.baselineFingerprints.has(finding.fingerprint)) : findings;
+  const visibleFindings = options.maxFindings ? unboundedFindings.slice(0, options.maxFindings) : unboundedFindings;
+  return { version: "0.4.0", root: resolvedRoot, scannedFiles: scannedFiles.sort(), score: score(visibleFindings), findings: visibleFindings, summary: Object.fromEntries(Object.keys(SEVERITY).filter((severity) => severity !== "none").map((severity) => [severity, visibleFindings.filter((finding) => finding.severity === severity).length])), baseline: options.baselineFingerprints ? { knownFindings: knownFindings.length, newFindings: unboundedFindings.length } : undefined, truncatedFindings: Math.max(0, unboundedFindings.length - visibleFindings.length) };
 }
 
 export function shouldFail(result, threshold = "high") {

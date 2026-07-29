@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: K14-coder/agent-preflight@v0.3.0
+      - uses: K14-coder/agent-preflight@v0.4.0
         with:
           mode: changed
           base: ${{ github.event.pull_request.base.sha }}
@@ -42,9 +42,9 @@ jobs:
 
 The action fails on new high- or critical-severity findings and exposes `score` and `findings` as step outputs.
 
-## Why v0.3 is useful in a real repository
+## Why v0.4 is useful in a real repository
 
-Security gates fail when they force a team to clean up every historical problem before they can protect the next pull request. v0.3 adds reviewed policy files and baselines, so the first adoption can report known debt while still blocking newly introduced high-risk instructions.
+Security gates fail when they force a team to clean up every historical problem before they can protect the next pull request. v0.4 uses reviewed policy files and baselines, so the first adoption can report known debt while still blocking newly introduced high-risk instructions.
 
 ```bash
 # Capture the current reviewed state once.
@@ -55,6 +55,8 @@ node src/cli.js scan . --baseline .agentpreflight-baseline.json --fail-on high
 ```
 
 Commit both the baseline and the policy review that approved it. Baselines are evidence of accepted risk, not a way to silence unknown findings.
+
+v0.4 adds strict policy profiles, native GitHub file annotations, multiple independent findings per file, bounded output for large repositories, checks for hard-coded token shapes, `pull_request_target`, MCP package bootstrapping, lifecycle hooks, and verification-control bypasses.
 
 ## What a finding looks like
 
@@ -84,6 +86,9 @@ node src/cli.js scan . --mode changed --base origin/main --fail-on high
 
 # Integrate with another tool or upload results to GitHub code scanning
 node src/cli.js scan . --format sarif --output agent-preflight.sarif
+
+# Raise medium findings under a strict profile and bound terminal output
+node src/cli.js scan . --profile strict --max-findings 50
 ```
 
 To upload SARIF in GitHub Actions:
@@ -122,6 +127,14 @@ Use `--all-files` when auditing a repository more broadly.
 | `APF010` | Write-capable workflow token | Medium |
 | `APF011` | Hidden Unicode control character | High |
 | `APF012` | Remote instruction loading | High |
+| `APF013` | Symbolic link | Medium |
+| `APF014` | Verification bypass | Medium |
+| `APF015` | Unpinned package installation | Medium |
+| `APF016` | Temporary executable launch | High |
+| `APF017` | Hard-coded credential-shaped token | High |
+| `APF018` | `pull_request_target` workflow | High |
+| `APF019` | MCP package bootstrap | High |
+| `APF020` | Package lifecycle hook | Medium |
 
 ## Policy and suppressions
 
@@ -161,6 +174,8 @@ Check in `.agentpreflight.json` to make policy visible in review:
 
 `off` must be used sparingly. Prefer lowering severity when a control is still worth tracking. See [policy guidance](docs/policies.md), the [full rule catalog](docs/rules.md), and [CI integrations](docs/integrations.md).
 
+Set `"profile": "strict"` to escalate medium findings to high, and set `"maxFindings": 50` to cap presentation output without changing the underlying JSON or SARIF workflow you retain for review.
+
 ### Explain a finding
 
 ```bash
@@ -172,6 +187,8 @@ This prints the rule’s default severity, why it fires, and its remediation. Us
 ## Privacy model
 
 `agent-preflight` is offline by design. It makes no network requests, collects no telemetry, and reads only the repository you explicitly scan. It does not start MCP servers or execute detected commands.
+
+Read the [threat model](docs/threat-model.md) and [operations guide](docs/operations.md) before treating a clean report as a merge decision.
 
 ## Roadmap
 

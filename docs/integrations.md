@@ -4,6 +4,8 @@
 
 Use the composite action from [examples/github-action.yml](../examples/github-action.yml). The action writes `score` and `findings` to step outputs and appends a Markdown summary when GitHub provides `GITHUB_STEP_SUMMARY`.
 
+It also emits native GitHub annotations for every result. The action exposes `known-findings` when a baseline is configured and `scanned-files` for workflow observability.
+
 For changed-files mode, `actions/checkout` must use `fetch-depth: 0` and `base` should be the pull request base SHA. That makes the comparison deterministic even when a branch is rebased.
 
 ## SARIF

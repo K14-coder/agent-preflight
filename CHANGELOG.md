@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- Added strict policy profiles, output caps, GitHub workflow annotations, and expanded Action outputs.
+- Added multi-finding detection and checks for token-shaped credentials, `pull_request_target`, MCP package bootstrapping, and lifecycle hooks.
+- Added threat-model and operations documentation.
+
 ## 0.3.0
 
 - Added `.agentpreflight.json` policy files for rule severity overrides, reviewed ignores, and repository-default fail thresholds.

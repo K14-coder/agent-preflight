@@ -23,6 +23,8 @@ export function loadConfig(root, configPath) {
   if (config.policy !== undefined && (config.policy === null || Array.isArray(config.policy) || typeof config.policy !== "object")) throw new Error("config.policy must be an object");
   for (const [ruleId, severity] of Object.entries(config.rules || {})) validateSeverity(severity, `config.rules.${ruleId}`, true);
   if (config.policy?.failOn !== undefined) validateSeverity(config.policy.failOn, "config.policy.failOn");
+  if (config.policy?.profile !== undefined && !["balanced", "strict"].includes(config.policy.profile)) throw new Error("config.policy.profile must be balanced or strict");
+  if (config.policy?.maxFindings !== undefined && (!Number.isInteger(config.policy.maxFindings) || config.policy.maxFindings < 1)) throw new Error("config.policy.maxFindings must be a positive integer");
   return { file, ignore: config.ignore || [], rules: config.rules || {}, policy: config.policy || {} };
 }
 

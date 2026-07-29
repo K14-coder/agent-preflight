@@ -4,7 +4,8 @@ export function textReport(result) {
   const count = result.findings.length;
   const header = `agent-preflight scanned ${result.scannedFiles.length} agent-facing files | risk score ${result.score}/100 | ${count} finding${count === 1 ? "" : "s"}`;
   if (!count) return `${header}\nNo findings at the selected policy level.`;
-  return [header, "", ...result.findings.map((finding) => `${finding.severity.toUpperCase()} ${finding.ruleId} ${finding.file}:${finding.line}:${finding.column}\n  ${finding.message}\n  Fix: ${finding.remediation}`)].join("\n");
+  const truncated = result.truncatedFindings ? `\n\nOutput limited; ${result.truncatedFindings} lower-priority finding${result.truncatedFindings === 1 ? "" : "s"} omitted.` : "";
+  return [header, "", ...result.findings.map((finding) => `${finding.severity.toUpperCase()} ${finding.ruleId} ${finding.file}:${finding.line}:${finding.column}\n  ${finding.message}\n  Fix: ${finding.remediation}`)].join("\n") + truncated;
 }
 
 export function sarifReport(result) {
@@ -24,5 +25,15 @@ export function markdownReport(result) {
   if (!result.findings.length) return `${summary}\n\nNo findings at the selected policy level.`;
   const rows = result.findings.map((finding) => `| ${finding.severity.toUpperCase()} | \`${finding.ruleId}\` | \`${finding.file}:${finding.line}\` | ${finding.message} |`).join("\n");
   const baseline = result.baseline ? `\n\n${result.baseline.knownFindings} known baseline finding${result.baseline.knownFindings === 1 ? " was" : "s were"} omitted.` : "";
-  return `${summary}\n\n| Severity | Rule | Location | Finding |\n| --- | --- | --- | --- |\n${rows}${baseline}`;
+  const truncated = result.truncatedFindings ? `\n\n${result.truncatedFindings} lower-priority finding${result.truncatedFindings === 1 ? "" : "s"} omitted by the configured limit.` : "";
+  const details = result.findings.map((finding) => `<details><summary><code>${finding.ruleId}</code> ${finding.file}:${finding.line}</summary>\n\n${finding.remediation}\n\n</details>`).join("\n");
+  return `${summary}\n\n| Severity | Rule | Location | Finding |\n| --- | --- | --- | --- |\n${rows}${baseline}${truncated}\n\n${details}`;
+}
+
+export function githubAnnotations(result) {
+  const escape = (value) => String(value).replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A").replaceAll(",", "%2C").replaceAll(":", "%3A");
+  return result.findings.map((finding) => {
+    const level = finding.severity === "critical" || finding.severity === "high" ? "error" : finding.severity === "medium" ? "warning" : "notice";
+    return `::${level} file=${escape(finding.file)},line=${finding.line},col=${finding.column},title=${escape(finding.ruleId)}::${escape(finding.message)}`;
+  }).join("\n");
 }

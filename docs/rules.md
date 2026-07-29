@@ -20,5 +20,9 @@ Each rule is deterministic, local, and paired with a source location and a sugge
 | APF014 | Medium | Detect verification and TLS-control bypasses. |
 | APF015 | Medium | Detect mutable or direct remote package installation. |
 | APF016 | High | Detect execution from temporary locations. |
+| APF017 | High | Detect common hard-coded credential shapes. |
+| APF018 | High | Detect `pull_request_target` workflows. |
+| APF019 | High | Detect non-interactive MCP package bootstrapping. |
+| APF020 | Medium | Detect package lifecycle hooks. |
 
 Run `node src/cli.js explain APF002` for the scanner’s current remediation text. Add false-positive regressions before changing a rule pattern or severity.

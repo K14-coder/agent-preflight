@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { baselineDocument, loadBaseline, loadConfig } from "./config.js";
 import { changedFiles } from "./git.js";
-import { markdownReport, sarifReport, textReport } from "./reporters.js";
+import { githubAnnotations, markdownReport, sarifReport, textReport } from "./reporters.js";
 import { RULES } from "./rules.js";
 import { scanRepository, shouldFail } from "./scan.js";
 
@@ -20,6 +20,8 @@ Scan options:
   --all-files                     Scan every text file, not only agent-facing surfaces
   --config <file>                 Use an explicit .agentpreflight.json policy file
   --baseline <file>               Omit matching reviewed findings from the result
+  --profile balanced|strict        Raise medium findings under the strict profile
+  --max-findings <count>           Cap output while preserving the highest-severity findings
   --format text|json|markdown|sarif  Output format (default: text)
   --output <file>                 Write report or baseline output to a file
   --fail-on <severity>            critical, high, medium, low, or none
@@ -40,6 +42,8 @@ function parse(argv) {
     else if (argument === "--fail-on") options.failOn = argv[++index];
     else if (argument === "--config") options.config = argv[++index];
     else if (argument === "--baseline") options.baseline = argv[++index];
+    else if (argument === "--profile") options.profile = argv[++index];
+    else if (argument === "--max-findings") options.maxFindings = Number(argv[++index]);
     else if (argument === "--all-files") options.allFiles = true;
     else if (argument === "--help" || argument === "-h") options.help = true;
     else if (!argument.startsWith("-")) positional.push(argument);
@@ -67,7 +71,11 @@ function scan(target, options, command) {
   if (!["text", "json", "markdown", "sarif"].includes(options.format)) throw new Error("--format must be text, json, markdown, or sarif");
   const changed = options.mode === "changed" ? changedFiles(root, options.base) : null;
   if (options.mode === "changed" && changed === null) throw new Error("Could not determine changed files. Supply --base inside a Git repository.");
-  const result = scanRepository(root, { changedFiles: changed || undefined, allFiles: options.allFiles, ignore: config.ignore, rules: config.rules, baselineFingerprints: baseline?.fingerprints });
+  const profile = options.profile || config.policy.profile || "balanced";
+  if (!["balanced", "strict"].includes(profile)) throw new Error("--profile must be balanced or strict");
+  const maxFindings = options.maxFindings || config.policy.maxFindings;
+  if (maxFindings !== undefined && (!Number.isInteger(maxFindings) || maxFindings < 1)) throw new Error("--max-findings must be a positive integer");
+  const result = scanRepository(root, { changedFiles: changed || undefined, allFiles: options.allFiles, ignore: config.ignore, rules: config.rules, profile, maxFindings, baselineFingerprints: baseline?.fingerprints });
   if (command === "baseline") {
     const output = `${JSON.stringify(baselineDocument(result), null, 2)}\n`;
     write(output, options.output || path.join(root, ".agentpreflight-baseline.json"));
@@ -75,8 +83,9 @@ function scan(target, options, command) {
   }
   const output = options.format === "sarif" ? `${JSON.stringify(sarifReport(result), null, 2)}\n` : options.format === "json" ? `${JSON.stringify(result, null, 2)}\n` : options.format === "markdown" ? markdownReport(result) : textReport(result);
   write(output, options.output);
-  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `score=${result.score}\nfindings=${result.findings.length}\n`);
+  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `score=${result.score}\nfindings=${result.findings.length}\nknown-findings=${result.baseline?.knownFindings || 0}\nscanned-files=${result.scannedFiles.length}\n`);
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${markdownReport(result)}\n`);
+  if (process.env.GITHUB_ACTIONS === "true" && result.findings.length) process.stdout.write(`${githubAnnotations(result)}\n`);
   if (shouldFail(result, options.failOn || config.policy.failOn || "high")) process.exitCode = 2;
 }
 

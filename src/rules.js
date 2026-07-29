@@ -123,5 +123,40 @@ export const RULES = [
     pattern: /\b(?:chmod\s+\+x\s+\/tmp\/|(?:ba)?sh\s+\/tmp\/|\.\/tmp\/)[^\n]{0,160}/i,
     message: "A command executes content from a temporary location.",
     remediation: "Store reviewed executables in version control or verify a pinned artifact before execution."
+  },
+  {
+    id: "APF017",
+    title: "Hard-coded credential-shaped token",
+    severity: "high",
+    pattern: /\b(?:ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{20,})\b/,
+    message: "A token-shaped credential appears directly in a scanned file.",
+    remediation: "Revoke the token if it is real, remove it from version control, and use a scoped secret provider."
+  },
+  {
+    id: "APF018",
+    title: "pull_request_target workflow",
+    severity: "high",
+    pattern: /\bon\s*:\s*pull_request_target\b|\bpull_request_target\s*:/i,
+    surfaces: ["workflow"],
+    message: "The workflow runs in the base repository security context for pull-request activity.",
+    remediation: "Use pull_request for untrusted code; isolate pull_request_target workflows and never check out or execute pull-request head content."
+  },
+  {
+    id: "APF019",
+    title: "MCP package bootstrap",
+    severity: "high",
+    pattern: /"command"\s*:\s*"(?:npx|pnpx|uvx)"[\s\S]{0,320}"(?:-y|--yes)"/i,
+    surfaces: ["mcp-config"],
+    message: "An MCP configuration installs and executes a package without an interactive review step.",
+    remediation: "Pin a reviewed package version or commit and install it through a controlled dependency workflow."
+  },
+  {
+    id: "APF020",
+    title: "Package lifecycle hook",
+    severity: "medium",
+    pattern: /"(?:preinstall|install|postinstall|prepublishOnly|prepare)"\s*:/i,
+    surfaces: ["package"],
+    message: "A package lifecycle hook can execute automatically during install or publish.",
+    remediation: "Keep lifecycle hooks minimal, documented, and free of network downloads or credential access."
   }
 ];

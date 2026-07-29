@@ -16,6 +16,8 @@
 ```
 
 - `policy.failOn` sets the default blocking threshold.
+- `policy.profile` accepts `balanced` (default) or `strict`; strict raises medium findings to high.
+- `policy.maxFindings` caps rendered output while retaining the highest-severity findings first.
 - `ignore` accepts exact repository-relative files or directory prefixes.
 - `rules` accepts `critical`, `high`, `medium`, `low`, or `off` for a known finding ID.
 

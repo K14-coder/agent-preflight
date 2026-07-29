@@ -1,6 +1,6 @@
 {
   "name": "agent-preflight",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A local-first security gate for AI coding agent instructions, MCP configs, scripts, and workflows.",
   "type": "module",
   "bin": { "agent-preflight": "./src/cli.js" },
